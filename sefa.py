@@ -79,11 +79,17 @@ def main():
     codes = torch.randn(args.num_samples, generator.z_space_dim).cuda()
     if gan_type == 'pggan':
         codes = generator.layer0.pixel_norm(codes)
-    elif gan_type in ['stylegan', 'stylegan2']:
+    elif gan_type == 'stylegan':
         codes = generator.mapping(codes)['w']
         codes = generator.truncation(codes,
                                      trunc_psi=args.trunc_psi,
                                      trunc_layers=args.trunc_layers)
+    elif gan_type == 'stylegan2':
+        codes = generator.mapping(codes)['w']
+        codes = generator.truncation(codes,
+                                     trunc_psi=args.trunc_psi,
+                                     trunc_layers=args.trunc_layers)
+    
     codes = codes.detach().cpu().numpy()
 
     # Generate visualization pages.
@@ -126,7 +132,10 @@ def main():
                 if gan_type == 'pggan':
                     temp_code += boundary * d
                     image = generator(to_tensor(temp_code))['image']
-                elif gan_type in ['stylegan', 'stylegan2']:
+                elif gan_type == 'stylegan':
+                    temp_code[:, layers, :] += boundary * d
+                    image = generator.synthesis(to_tensor(temp_code))['image']
+                elif gan_type == 'stylegan2':
                     temp_code[:, layers, :] += boundary * d
                     image = generator.synthesis(to_tensor(temp_code))['image']
                 image = postprocess(image)[0]
@@ -134,7 +143,6 @@ def main():
                                  image=image)
                 vizer_2.set_cell(sam_id * (num_sem + 1) + sem_id + 1, col_id,
                                  image=image)
-
     prefix = (f'{args.model_name}_'
               f'N{num_sam}_K{num_sem}_L{args.layer_idx}_seed{args.seed}')
     vizer_1.save(os.path.join(args.save_dir, f'{prefix}_sample_first.html'))
