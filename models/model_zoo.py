@@ -298,6 +298,11 @@ MODEL_ZOO = {
         resolution=512,
         url='https://mycuhk-my.sharepoint.com/:u:/g/personal/1155082926_link_cuhk_edu_hk/EYSnUsxU8KJFuMHhZm-JLWoB0nHxdlbrLHNZ_Qkoe3b9LA?e=Ycjp5A&download=1',
     ),
+    'stylegan2-ffhq-config-f': dict(
+        gan_type='stylegan2_gs',
+        resolution=1024,
+        url='', #얘는 임시
+    ),
 }
 
 # pylint: enable=line-too-long

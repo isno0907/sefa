@@ -4,6 +4,7 @@ import os
 import argparse
 from tqdm import tqdm
 import numpy as np
+import sys
 
 import torch
 
@@ -13,6 +14,7 @@ from utils import postprocess
 from utils import load_generator
 from utils import factorize_weight
 from utils import HtmlPageVisualizer
+import torch
 
 
 def parse_args():
@@ -62,6 +64,9 @@ def parse_args():
 
 def main():
     """Main function."""
+    # sys.argv = ['sefa.py', 'stylegan2-ffhq-config-f']
+    sys.argv = ['sefa.py', 'stylegan2_ffhq1024']
+    
     args = parse_args()
     os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu_id
     os.makedirs(args.save_dir, exist_ok=True)
@@ -90,6 +95,8 @@ def main():
                                      trunc_psi=args.trunc_psi,
                                      trunc_layers=args.trunc_layers)
     
+    elif gan_type == 'stylegan2_gs':
+        image, codes = generator(torch.unsqueeze(codes, 0))
     codes = codes.detach().cpu().numpy()
 
     # Generate visualization pages.
@@ -125,6 +132,8 @@ def main():
 
     for sam_id in tqdm(range(num_sam), desc='Sample ', leave=False):
         code = codes[sam_id:sam_id + 1]
+        if gan_type == 'stylegan2_gs':
+            image = image[sam_id:sam_id+1]
         for sem_id in tqdm(range(num_sem), desc='Semantic ', leave=False):
             boundary = boundaries[sem_id:sem_id + 1]
             for col_id, d in enumerate(distances, start=1):

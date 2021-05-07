@@ -15,6 +15,7 @@ from models import parse_gan_type
 __all__ = ['postprocess', 'load_generator', 'factorize_weight',
            'HtmlPageVisualizer']
 
+os.chdir('/home/isno/GAN/sefa')
 CHECKPOINT_DIR = 'checkpoints'
 
 
@@ -85,6 +86,8 @@ def load_generator(model_name):
     checkpoint = torch.load(checkpoint_path, map_location='cpu')
     if 'generator_smooth' in checkpoint:
         generator.load_state_dict(checkpoint['generator_smooth'])
+    elif 'g_ema' in checkpoint:
+        generator.load_state_dict(checkpoint['g_ema'])
     else:
         generator.load_state_dict(checkpoint['generator'])
     generator = generator.cuda()
@@ -173,11 +176,26 @@ def factorize_weight(generator, layer_idx='all'):
             layers = parse_indices(layer_idx,
                                    min_val=0,
                                    max_val=generator.num_layers - 1)
-
+    elif gan_type == 'stylegan2_gs':
+        if layer_idx == 'all':
+            layers = list(range(generator.num_layers + 1))
+        else:
+            layers = parse_indices(layer_idx,
+                                   min_val=0,
+                                   max_val=generator.num_layers - 1)
     # Factorize semantics from weight.
     weights = []
+    
     for idx in layers:
-        layer_name = f'layer{idx}'
+        if gan_type == 'stylegan2_gs':
+            if idx == 0:
+                layer_name = 'conv1'
+            elif idx < 17:
+                layer_name = 'convs'
+            else:
+                layer_name = 'to_rgbs'
+        else:
+            layer_name = f'layer{idx}'
         if gan_type == 'stylegan2' and idx == generator.num_layers - 1:
             layer_name = f'output{idx // 2}'
         if gan_type == 'pggan':
@@ -185,6 +203,13 @@ def factorize_weight(generator, layer_idx='all'):
             weight = weight.flip(2, 3).permute(1, 0, 2, 3).flatten(1)
         elif gan_type in ['stylegan', 'stylegan2']:
             weight = generator.synthesis.__getattr__(layer_name).style.weight.T
+        elif gan_type == 'stylegan2_gs':
+            if idx == 0:
+                weight = generator.__getattr__(layer_name).conv.modulation.weight.T
+            elif idx < 17:
+                weight = generator.__getattr__(layer_name)[idx-1].conv.modulation.weight.T
+            else:
+                weight = generator.__getattr__(layer_name)[7].conv.modulation.weight.T
         weights.append(weight.cpu().detach().numpy())
     weight = np.concatenate(weights, axis=1).astype(np.float32)
     weight = weight / np.linalg.norm(weight, axis=0, keepdims=True)

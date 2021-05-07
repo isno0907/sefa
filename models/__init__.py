@@ -8,14 +8,16 @@ from .stylegan_generator import StyleGANGenerator
 from .stylegan_discriminator import StyleGANDiscriminator
 from .stylegan2_generator import StyleGAN2Generator
 from .stylegan2_discriminator import StyleGAN2Discriminator
+from .stylegan2_gs_generator import StyleGAN2_GS_Generator
+# from op import FusedLeakyReLU, fused_leaky_relu, upfirdn2d
 
 __all__ = [
     'MODEL_ZOO', 'PGGANGenerator', 'PGGANDiscriminator', 'StyleGANGenerator',
     'StyleGANDiscriminator', 'StyleGAN2Generator', 'StyleGAN2Discriminator',
-    'build_generator', 'build_discriminator', 'build_model'
+    'StyleGAN2_GS_Generator', 'build_generator', 'build_discriminator', 'build_model', 
 ]
 
-_GAN_TYPES_ALLOWED = ['pggan', 'stylegan', 'stylegan2']
+_GAN_TYPES_ALLOWED = ['pggan', 'stylegan', 'stylegan2', 'stylegan2_gs']
 _MODULES_ALLOWED = ['generator', 'discriminator']
 
 
@@ -41,6 +43,8 @@ def build_generator(gan_type, resolution, **kwargs):
         return StyleGANGenerator(resolution, **kwargs)
     if gan_type == 'stylegan2':
         return StyleGAN2Generator(resolution, **kwargs)
+    if gan_type == 'stylegan2_gs':
+        return StyleGAN2_GS_Generator(resolution, **kwargs)
     raise NotImplementedError(f'Unsupported GAN type `{gan_type}`!')
 
 
@@ -111,4 +115,6 @@ def parse_gan_type(module):
         return 'stylegan'
     if isinstance(module, (StyleGAN2Generator, StyleGAN2Discriminator)):
         return 'stylegan2'
+    if isinstance(module, (StyleGAN2_GS_Generator, StyleGAN2Discriminator)):
+        return 'stylegan2_gs'
     raise ValueError(f'Unable to parse GAN type from type `{type(module)}`!')
